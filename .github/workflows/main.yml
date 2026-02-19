@@ -172,7 +172,15 @@ jobs:
             out.gn/android.${{ matrix.platform }}.release/args.gn \
             out.gn/android.${{ matrix.platform }}.release/args.full.txt
           if [ "${{ matrix.platform }}" = "arm64" ]; then
-            zip -r ../include-${{ env.JOB_NAME }}.zip include
+            rm -rf include-with-inspector
+            mkdir -p include-with-inspector/include
+            cp -R include/* include-with-inspector/include/
+            INSPECTOR_HEADERS="out.gn/android.${{ matrix.platform }}.release/gen/include/inspector"
+            if [ -d "$INSPECTOR_HEADERS" ]; then
+              mkdir -p include-with-inspector/include/inspector
+              cp -R "$INSPECTOR_HEADERS"/* include-with-inspector/include/inspector/
+            fi
+            (cd include-with-inspector && zip -r ../include-${{ env.JOB_NAME }}.zip include)
           fi
           ls -a
           echo "::endgroup::"
@@ -282,16 +290,29 @@ jobs:
         run: |
           cd ${{ github.workspace }}/v8
           echo "::group::Create XCFramework with headers"
+
+          copy_headers_with_inspector() {
+            local out_dir="$1"
+            local headers_dir="$2"
+            local inspector_headers="${out_dir}/gen/include/inspector"
+
+            mkdir -p "$headers_dir"
+            cp -R include/* "$headers_dir/"
+            if [ -d "$inspector_headers" ]; then
+              mkdir -p "$headers_dir/inspector"
+              cp -R "$inspector_headers"/* "$headers_dir/inspector/"
+            fi
+          }
           
           # Create framework structure for iOS device
           mkdir -p frameworks/ios-arm64/libv8_monolith.framework/Headers
           cp out.gn/ios.arm64.release/obj/libv8_monolith.a frameworks/ios-arm64/libv8_monolith.framework/libv8_monolith
-          cp -R include/* frameworks/ios-arm64/libv8_monolith.framework/Headers/
+          copy_headers_with_inspector out.gn/ios.arm64.release frameworks/ios-arm64/libv8_monolith.framework/Headers
           
           # Create framework structure for iOS simulator
           mkdir -p frameworks/ios-arm64-simulator/libv8_monolith.framework/Headers
           cp out.gn/ios.arm64.simulator.release/obj/libv8_monolith.a frameworks/ios-arm64-simulator/libv8_monolith.framework/libv8_monolith
-          cp -R include/* frameworks/ios-arm64-simulator/libv8_monolith.framework/Headers/
+          copy_headers_with_inspector out.gn/ios.arm64.simulator.release frameworks/ios-arm64-simulator/libv8_monolith.framework/Headers
           
           # Copy and customize Info.plist for each framework
           sed "s/V8_VERSION_PLACEHOLDER/${{ env.V8_VERSION }}/g" ${{ github.workspace }}/Info.plist.template > frameworks/ios-arm64/libv8_monolith.framework/Info.plist
@@ -397,11 +418,24 @@ jobs:
         run: |
           cd ${{ github.workspace }}/v8
           echo "::group::Create XCFramework with headers"
+
+          copy_headers_with_inspector() {
+            local out_dir="$1"
+            local headers_dir="$2"
+            local inspector_headers="${out_dir}/gen/include/inspector"
+
+            mkdir -p "$headers_dir"
+            cp -R include/* "$headers_dir/"
+            if [ -d "$inspector_headers" ]; then
+              mkdir -p "$headers_dir/inspector"
+              cp -R "$inspector_headers"/* "$headers_dir/inspector/"
+            fi
+          }
           
           # Create framework structure for macOS
           mkdir -p frameworks/macos-arm64/libv8_monolith.framework/Headers
           cp out.gn/mac.arm64.release/obj/libv8_monolith.a frameworks/macos-arm64/libv8_monolith.framework/libv8_monolith
-          cp -R include/* frameworks/macos-arm64/libv8_monolith.framework/Headers/
+          copy_headers_with_inspector out.gn/mac.arm64.release frameworks/macos-arm64/libv8_monolith.framework/Headers
           
           # Copy and customize Info.plist
           sed "s/V8_VERSION_PLACEHOLDER/${{ env.V8_VERSION }}/g" ${{ github.workspace }}/Info.plist.template > frameworks/macos-arm64/libv8_monolith.framework/Info.plist
@@ -521,7 +555,21 @@ jobs:
             "${{ github.workspace }}/v8/out.gn/win.${{ matrix.platform }}.${{ matrix.build_type }}/args.full.txt"
           ) -Destination ${{ github.workspace }}/libv8_monolith-${{ env.JOB_NAME }}-${{ matrix.platform }}-${{ matrix.build_type }}.zip
           if ("${{ matrix.platform }}" -eq "x64" -and "${{ matrix.build_type }}" -eq "release") {
-            Compress-Archive -Path ${{ github.workspace }}/v8/include -Destination ${{ github.workspace }}/include-${{ env.JOB_NAME }}.zip
+            $stageRoot = "${{ github.workspace }}/v8/include-with-inspector"
+            $stageInclude = "$stageRoot/include"
+            $inspectorHeaders = "${{ github.workspace }}/v8/out.gn/win.${{ matrix.platform }}.${{ matrix.build_type }}/gen/include/inspector"
+
+            if (Test-Path $stageRoot) {
+              Remove-Item -Path $stageRoot -Recurse -Force
+            }
+            New-Item -ItemType Directory -Path $stageInclude | Out-Null
+            Copy-Item -Path "${{ github.workspace }}/v8/include/*" -Destination $stageInclude -Recurse -Force
+            if (Test-Path $inspectorHeaders) {
+              New-Item -ItemType Directory -Path "$stageInclude/inspector" -Force | Out-Null
+              Copy-Item -Path "$inspectorHeaders/*" -Destination "$stageInclude/inspector" -Recurse -Force
+            }
+
+            Compress-Archive -Path $stageInclude -Destination ${{ github.workspace }}/include-${{ env.JOB_NAME }}.zip
           }
           echo "::endgroup::"
       - name: Upload static library
