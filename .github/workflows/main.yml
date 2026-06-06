@@ -242,7 +242,7 @@ jobs:
     env:
       JOB_NAME: ios
     needs: create-release
-    runs-on: macos-26
+    runs-on: ${{ matrix.v8.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -250,12 +250,15 @@ jobs:
           - major: "10"
             version: "10.9"
             ref: refs/branch-heads/10.9
+            runner: macos-15
           - major: "11"
             version: "11.9"
             ref: refs/branch-heads/11.9
+            runner: macos-15
           - major: "13"
             version: "13.9"
             ref: refs/branch-heads/13.9
+            runner: macos-26
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -411,7 +414,7 @@ jobs:
     env:
       JOB_NAME: mac
     needs: create-release
-    runs-on: macos-26
+    runs-on: ${{ matrix.v8.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -419,12 +422,15 @@ jobs:
           - major: "10"
             version: "10.9"
             ref: refs/branch-heads/10.9
+            runner: macos-15
           - major: "11"
             version: "11.9"
             ref: refs/branch-heads/11.9
+            runner: macos-15
           - major: "13"
             version: "13.9"
             ref: refs/branch-heads/13.9
+            runner: macos-26
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
