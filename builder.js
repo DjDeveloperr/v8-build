@@ -123,6 +123,9 @@ const sanitizeGNArgs = function (argsPath) {
         setGNArg("use_sysroot", "true");
         setGNArg("use_xcode_clang", "true");
         setGNArg("v8_enable_webassembly", "false");
+        if (v8Major === "10" || v8Major === "11") {
+            setGNArg("use_custom_libcxx", "true");
+        }
         if (v8Major === "13") {
             setGNArg("v8_enable_drumbrake", "false");
         }
@@ -130,6 +133,9 @@ const sanitizeGNArgs = function (argsPath) {
 
     if (jobName === "mac") {
         setGNArg("use_xcode_clang", "true");
+        if (v8Major === "10" || v8Major === "11") {
+            setGNArg("use_custom_libcxx", "true");
+        }
     }
 
     if (changed) {
