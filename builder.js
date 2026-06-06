@@ -153,6 +153,25 @@ const appendGNArgIfMissing = function (argsPath, line) {
     return content;
 };
 
+const patchIosPthreadJitWriteProtect = function () {
+    const buildConfigPath = path.join(v8SourcePath, "src", "base", "build_config.h");
+    if (!fs.existsSync(buildConfigPath)) {
+        trace("build_config.h does not exist, skip iOS pthread JIT patch");
+        return;
+    }
+
+    let content = fs.readFileSync(buildConfigPath, "utf8");
+    const oldCondition = "    (defined(V8_OS_MACOS) || (defined(V8_OS_IOS) && TARGET_OS_SIMULATOR))";
+    if (!content.includes(oldCondition)) {
+        trace("iOS pthread JIT patch not needed");
+        return;
+    }
+
+    content = content.replace(oldCondition, "    defined(V8_OS_MACOS)");
+    fs.writeFileSync(buildConfigPath, content);
+    trace("Patched V8_HAS_PTHREAD_JIT_WRITE_PROTECT to exclude iOS");
+};
+
 /**
  * 在ninja构建前执行，修改v8源码
  */
@@ -174,6 +193,7 @@ clang_base_path="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
             break;
         }
         case "ios": {
+            patchIosPthreadJitWriteProtect();
             const gnContent = fs.readFileSync(argsPath, "utf8");
             if (gnContent.indexOf(`v8_enable_drumbrake=true`) >= 0) {
                 {
