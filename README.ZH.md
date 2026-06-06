@@ -6,14 +6,17 @@
 
 ## 当前 V8 版本
 
-**14.3.92**
+此工作流会并行构建三个 V8 主版本：
+
+- **V8 10** (`refs/branch-heads/10.9`)
+- **V8 11** (`refs/branch-heads/11.9`)
+- **V8 13** (`refs/branch-heads/13.9`)
 
 ## 支持平台
 
 - **Android** (arm64, arm, x64)
 - **iOS** (XCFramework: arm64 真机、arm64 模拟器)
 - **macOS** (XCFramework: arm64 Apple Silicon)
-- **Windows** (x64)
 
 ## 最新版本
 
@@ -30,14 +33,12 @@
 
 | 平台 | 产物文件 | 架构 | 说明 |
 |------|---------|------|------|
-| Android  | `libv8_monolith-android-arm64.zip` | arm64 | 静态库 + args.gn + args.full.txt |
-| Android  | `libv8_monolith-android-arm.zip` | arm | 静态库 + args.gn + args.full.txt |
-| Android  | `libv8_monolith-android-x64.zip` | x64 | 静态库 + args.gn + args.full.txt |
-| Android  | `include-android.zip` | - | V8 头文件 |
-| iOS      | `libv8_monolith-ios.zip` | arm64（真机+模拟器） | XCFramework（含头文件 + args.gn + args.full.txt） |
-| macOS    | `libv8_monolith-mac.zip` | arm64（Apple Silicon） | XCFramework（含头文件 + args.gn + args.full.txt） |
-| Windows  | `libv8_monolith-win-x64.zip` | x64 | 静态库 + args.gn + args.full.txt |
-| Windows  | `include-win.zip` | - | V8 头文件 |
+| Android  | `libv8_monolith-v8-{major}-android-arm64.zip` | arm64 | 静态库 + args.gn + args.full.txt |
+| Android  | `libv8_monolith-v8-{major}-android-arm.zip` | arm | 静态库 + args.gn + args.full.txt |
+| Android  | `libv8_monolith-v8-{major}-android-x64.zip` | x64 | 静态库 + args.gn + args.full.txt |
+| Android  | `include-v8-{major}-android.zip` | - | V8 头文件 |
+| iOS      | `libv8_monolith-v8-{major}-ios.zip` | arm64（真机+模拟器） | XCFramework（含头文件 + args.gn + args.full.txt） |
+| macOS    | `libv8_monolith-v8-{major}-mac.zip` | arm64（Apple Silicon） | XCFramework（含头文件 + args.gn + args.full.txt） |
 
 ## 构建配置文件
 
@@ -92,9 +93,6 @@ libv8_monolith.xcframework/
 
 **在 Xcode 中使用**：与 iOS 相同，直接拖拽到项目中即可
 
-### Windows
-- [args.win.x64.gn](args.win.x64.gn)
-
 ### XCFramework 配置
 - [Info.plist.template](Info.plist.template) - XCFramework Info.plist 模板文件（构建时自动替换版本号）
 
@@ -118,6 +116,7 @@ libv8_monolith.xcframework/
 
 所有构建均通过 [GitHub Actions](.github/workflows/main.yml) 自动化完成：
 - 为每个平台提供干净的构建环境
+- 并行构建 V8 10、11、13
 - 使用统一的 depot_tools 版本
 - 可重现的构建过程
 - 自动创建发布版本
@@ -144,7 +143,7 @@ libv8_monolith.xcframework/
 
 更新 V8 版本或修改构建配置：
 
-1. 在 [.github/workflows/main.yml](.github/workflows/main.yml) 中更新 `V8_VERSION`
+1. 在 [.github/workflows/main.yml](.github/workflows/main.yml) 中更新 `matrix.v8` 条目
 2. 根据需要修改平台特定的 `args.*.gn` 文件
 3. 更新 [builder.js](builder.js) 中的平台特定构建逻辑
 4. 创建新的 git 标签以触发构建工作流
@@ -156,4 +155,3 @@ libv8_monolith.xcframework/
 ## 许可证
 
 本仓库包含构建配置和自动化脚本。V8 本身采用 BSD 许可证。详情请参阅 [V8 仓库](https://github.com/v8/v8)。
-

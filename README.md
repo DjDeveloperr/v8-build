@@ -4,16 +4,19 @@ This repository contains automated builds of Google V8 static libraries for mult
 
 English | [简体中文](README.ZH.md)
 
-## Current V8 Version
+## Current V8 Versions
 
-**14.3.92**
+This workflow builds three V8 major versions in parallel:
+
+- **V8 10** (`refs/branch-heads/10.9`)
+- **V8 11** (`refs/branch-heads/11.9`)
+- **V8 13** (`refs/branch-heads/13.9`)
 
 ## Supported Platforms
 
 - **Android** (arm64, arm, x64)
 - **iOS** (XCFramework: arm64 device, arm64 simulator)
 - **macOS** (XCFramework: arm64 Apple Silicon)
-- **Windows** (x64)
 
 ## Latest Release
 
@@ -30,14 +33,12 @@ Each release includes zip packages with:
 
 | Platform | Artifact File | Architectures | Description |
 |----------|--------------|---------------|-------------|
-| Android  | `libv8_monolith-android-arm64.zip` | arm64 | Static library + args.gn + args.full.txt |
-| Android  | `libv8_monolith-android-arm.zip` | arm | Static library + args.gn + args.full.txt |
-| Android  | `libv8_monolith-android-x64.zip` | x64 | Static library + args.gn + args.full.txt |
-| Android  | `include-android.zip` | - | V8 header files |
-| iOS      | `libv8_monolith-ios.zip` | arm64 (device + simulator) | XCFramework with headers + args.gn + args.full.txt |
-| macOS    | `libv8_monolith-mac.zip` | arm64 (Apple Silicon) | XCFramework with headers + args.gn + args.full.txt |
-| Windows  | `libv8_monolith-win-x64.zip` | x64 | Static library + args.gn + args.full.txt |
-| Windows  | `include-win.zip` | - | V8 header files |
+| Android  | `libv8_monolith-v8-{major}-android-arm64.zip` | arm64 | Static library + args.gn + args.full.txt |
+| Android  | `libv8_monolith-v8-{major}-android-arm.zip` | arm | Static library + args.gn + args.full.txt |
+| Android  | `libv8_monolith-v8-{major}-android-x64.zip` | x64 | Static library + args.gn + args.full.txt |
+| Android  | `include-v8-{major}-android.zip` | - | V8 header files |
+| iOS      | `libv8_monolith-v8-{major}-ios.zip` | arm64 (device + simulator) | XCFramework with headers + args.gn + args.full.txt |
+| macOS    | `libv8_monolith-v8-{major}-mac.zip` | arm64 (Apple Silicon) | XCFramework with headers + args.gn + args.full.txt |
 
 ## Build Configuration Files
 
@@ -92,9 +93,6 @@ libv8_monolith.xcframework/
 
 **Usage in Xcode**: Same as iOS, drag and drop into your project
 
-### Windows
-- [args.win.x64.gn](args.win.x64.gn)
-
 ### XCFramework Configuration
 - [Info.plist.template](Info.plist.template) - Template for XCFramework Info.plist (version is replaced during build)
 
@@ -118,6 +116,7 @@ libv8_monolith.xcframework/
 
 All builds are automated using [GitHub Actions](.github/workflows/main.yml):
 - Clean build environment for each platform
+- Parallel V8 10, 11, and 13 build matrix
 - Consistent depot_tools version
 - Reproducible builds
 - Automated release creation
@@ -144,7 +143,7 @@ All builds are automated using [GitHub Actions](.github/workflows/main.yml):
 
 To update the V8 version or modify build configurations:
 
-1. Update `V8_VERSION` in [.github/workflows/main.yml](.github/workflows/main.yml)
+1. Update the `matrix.v8` entries in [.github/workflows/main.yml](.github/workflows/main.yml)
 2. Modify platform-specific `args.*.gn` files as needed
 3. Update [builder.js](builder.js) for platform-specific build logic
 4. Create a new git tag to trigger the build workflow

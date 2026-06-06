@@ -67,7 +67,7 @@ git push origin v14.3.92-31
    - 标题通常是你最近一次 commit 的信息。
    - 触发事件会显示为 `Tag push`。
 
-3. 点击进入查看详情，确认 `build-win` (Windows 构建) 是否成功执行。
+3. 点击进入查看详情，确认 `build-android`、`build-ios`、`build-mac` 的 V8 10/11/13 矩阵是否成功执行。
 
 ## 4. 常见问题排查
 
