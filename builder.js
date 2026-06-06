@@ -96,15 +96,40 @@ const sanitizeGNArgs = function (argsPath) {
         return false;
     });
 
-    if (jobName === "ios" && (v8Major === "10" || v8Major === "11")) {
+    const setGNArg = function (key, value) {
+        const replacement = `${key}=${value}`;
+        let found = false;
         lines = lines.map((line) => {
-            if (line.trim() === "v8_enable_webassembly=true") {
+            const match = line.trim().match(/^([A-Za-z0-9_]+)\s*=/);
+            if (!match || match[1] !== key) {
+                return line;
+            }
+            found = true;
+            if (line.trim() !== replacement) {
                 changed = true;
-                trace("Disable iOS WebAssembly for V8 " + v8Major + " because drumbrake is unavailable");
-                return "v8_enable_webassembly=false";
+                trace("Set GN arg for " + jobName + " V8 " + v8Major + ": " + replacement);
+                return replacement;
             }
             return line;
         });
+        if (!found) {
+            changed = true;
+            trace("Add GN arg for " + jobName + " V8 " + v8Major + ": " + replacement);
+            lines.push(replacement);
+        }
+    };
+
+    if (jobName === "ios") {
+        setGNArg("use_sysroot", "true");
+        setGNArg("use_xcode_clang", "true");
+        setGNArg("v8_enable_webassembly", "false");
+        if (v8Major === "13") {
+            setGNArg("v8_enable_drumbrake", "false");
+        }
+    }
+
+    if (jobName === "mac") {
+        setGNArg("use_xcode_clang", "true");
     }
 
     if (changed) {
