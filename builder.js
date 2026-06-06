@@ -173,37 +173,6 @@ clang_base_path="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
                     }
                     isModify && fs.writeFileSync(gnPath, lines.join("\n"));
                 }
-                {
-                    // v8/gni/v8.gni
-                    const patchMarker = "# v8-build ios drumbrake workaround";
-                    const codes = `      
-      ${patchMarker}
-      v8_enable_lite_mode = true
-      # Since v8 has the Wasm interpreter mode with jitless, iOS enables it
-      # to use WebAssembly.
-      v8_enable_drumbrake = true
-      v8_enable_webassembly = true
-
-      # iOS doesn't use Turbofan.
-      v8_enable_turbofan = false
-`;
-                    let gniPath = path.join(v8SourcePath, "gni", "v8.gni");
-                    let content = fs.readFileSync(gniPath, "utf8");
-                    if (content.includes(patchMarker)) {
-                        break;
-                    }
-                    const lines = content.split("\n");
-                    let isModify = false;
-                    for (let i = 0; i < lines.length; i++) {
-                        if (lines[i].includes("use_blink")) {
-                            trace("********************************** Modify gni/v8.gn:line-" + (i));
-                            lines[i] = lines[i] + codes;
-                            isModify = true;
-                            break;
-                        }
-                    }
-                    isModify && fs.writeFileSync(gniPath, lines.join("\n"));
-                }
             }
             break;
         }
