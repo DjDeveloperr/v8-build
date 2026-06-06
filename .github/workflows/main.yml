@@ -269,6 +269,7 @@ jobs:
           V8_REF: ${{ matrix.v8.ref }}
         run: |
           echo "::group::Prepare v8 build environment"
+          python3 -m pip install --user setuptools
           git clone $DEPOT_TOOLS_REPO > /dev/null
           export PATH="$GITHUB_WORKSPACE/depot_tools:${PATH}"
           gclient
@@ -437,6 +438,7 @@ jobs:
           V8_REF: ${{ matrix.v8.ref }}
         run: |
           echo "::group::Prepare v8 build environment"
+          python3 -m pip install --user setuptools
           git clone $DEPOT_TOOLS_REPO > /dev/null
           export PATH="$GITHUB_WORKSPACE/depot_tools:${PATH}"
           gclient
