@@ -161,15 +161,38 @@ const patchIosPthreadJitWriteProtect = function () {
     }
 
     let content = fs.readFileSync(buildConfigPath, "utf8");
+    let changed = false;
     const oldCondition = "    (defined(V8_OS_MACOS) || (defined(V8_OS_IOS) && TARGET_OS_SIMULATOR))";
-    if (!content.includes(oldCondition)) {
-        trace("iOS pthread JIT patch not needed");
-        return;
+    if (content.includes(oldCondition)) {
+        content = content.replace(oldCondition, "    defined(V8_OS_MACOS)");
+        changed = true;
+        trace("Patched V8_HAS_PTHREAD_JIT_WRITE_PROTECT to exclude iOS condition");
     }
 
-    content = content.replace(oldCondition, "    defined(V8_OS_MACOS)");
-    fs.writeFileSync(buildConfigPath, content);
-    trace("Patched V8_HAS_PTHREAD_JIT_WRITE_PROTECT to exclude iOS");
+    const iosTargetOverride = [
+        "",
+        "#if defined(V8_TARGET_OS_IOS)",
+        "#undef V8_HAS_PTHREAD_JIT_WRITE_PROTECT",
+        "#define V8_HAS_PTHREAD_JIT_WRITE_PROTECT 0",
+        "#endif",
+        "",
+    ].join("\n");
+    if (!content.includes("#undef V8_HAS_PTHREAD_JIT_WRITE_PROTECT")) {
+        const includeGuardEnd = "#endif  // V8_BASE_BUILD_CONFIG_H_";
+        if (content.includes(includeGuardEnd)) {
+            content = content.replace(includeGuardEnd, iosTargetOverride + includeGuardEnd);
+            changed = true;
+            trace("Patched V8_HAS_PTHREAD_JIT_WRITE_PROTECT to disable iOS target");
+        } else {
+            trace("iOS pthread JIT build_config include guard not found");
+        }
+    }
+
+    if (changed) {
+        fs.writeFileSync(buildConfigPath, content);
+    } else {
+        trace("iOS pthread JIT build_config patch not needed");
+    }
 };
 
 const patchIosPthreadJitWriteProtectCallSites = function () {
