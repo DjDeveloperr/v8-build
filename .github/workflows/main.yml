@@ -128,6 +128,11 @@ jobs:
           add-to-path: false
           local-cache: true
 
+      - name: Install Android host runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libatomic1
+
       - name: compile v8
         env:
           PLATFORM: ${{ matrix.platform }}
@@ -190,6 +195,11 @@ jobs:
 
           echo "Running gclient sync with dependencies..."
           gclient sync -D --force --reset
+          if [ "$V8_MAJOR" = "13" ]; then
+            echo "Checkout simdutf revision with V8 13 base64 APIs"
+            git -C third_party/simdutf fetch origin f7356eed293f8208c40b3c1b344a50bd70971983
+            git -C third_party/simdutf checkout f7356eed293f8208c40b3c1b344a50bd70971983
+          fi
           ./build/install-build-deps.sh --no-prompt --no-chromeos-fonts || true
           echo "::endgroup::"
           echo "::group::Run pre-build script"
@@ -217,7 +227,7 @@ jobs:
               mkdir -p include-with-inspector/include/inspector
               cp -R "$INSPECTOR_HEADERS"/* include-with-inspector/include/inspector/
             fi
-            (cd include-with-inspector && zip -r ../include-v8-${{ matrix.v8.major }}-${{ env.JOB_NAME }}.zip include)
+            (cd include-with-inspector && zip -r ../../include-v8-${{ matrix.v8.major }}-${{ env.JOB_NAME }}.zip include)
           fi
           ls -a
           echo "::endgroup::"

@@ -172,6 +172,30 @@ const patchIosPthreadJitWriteProtect = function () {
     trace("Patched V8_HAS_PTHREAD_JIT_WRITE_PROTECT to exclude iOS");
 };
 
+const patchIosPthreadJitWriteProtectCallSites = function () {
+    const codeMemoryAccessPath = path.join(v8SourcePath, "src", "common", "code-memory-access-inl.h");
+    if (!fs.existsSync(codeMemoryAccessPath)) {
+        trace("code-memory-access-inl.h does not exist, skip iOS pthread JIT call-site patch");
+        return;
+    }
+
+    let content = fs.readFileSync(codeMemoryAccessPath, "utf8");
+    const oldCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT";
+    const newCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !defined(V8_TARGET_OS_IOS)";
+    if (content.includes(newCondition)) {
+        trace("iOS pthread JIT call-site patch already applied");
+        return;
+    }
+    if (!content.includes(oldCondition)) {
+        trace("iOS pthread JIT call-site patch not needed");
+        return;
+    }
+
+    content = content.replace(oldCondition, newCondition);
+    fs.writeFileSync(codeMemoryAccessPath, content);
+    trace("Patched pthread JIT write-protect call sites to exclude iOS target");
+};
+
 /**
  * 在ninja构建前执行，修改v8源码
  */
@@ -194,6 +218,7 @@ clang_base_path="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
         }
         case "ios": {
             patchIosPthreadJitWriteProtect();
+            patchIosPthreadJitWriteProtectCallSites();
             const gnContent = fs.readFileSync(argsPath, "utf8");
             if (gnContent.indexOf(`v8_enable_drumbrake=true`) >= 0) {
                 {
