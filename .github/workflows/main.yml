@@ -196,9 +196,10 @@ jobs:
           echo "Running gclient sync with dependencies..."
           gclient sync -D --force --reset
           if [ "$V8_MAJOR" = "13" ]; then
-            echo "Checkout simdutf revision with V8 13 base64 APIs"
-            git -C third_party/simdutf fetch origin f7356eed293f8208c40b3c1b344a50bd70971983
-            git -C third_party/simdutf checkout f7356eed293f8208c40b3c1b344a50bd70971983
+            echo "Checkout V8 13 DEPS-pinned simdutf revision"
+            git -C third_party/simdutf fetch origin a1046f20f7099b4f7dd72d7127bb4dc05252ec5c
+            git -C third_party/simdutf checkout a1046f20f7099b4f7dd72d7127bb4dc05252ec5c
+            git -C third_party/simdutf grep -n "atomic_base64_to_binary_safe" -- simdutf.h
           fi
           ./build/install-build-deps.sh --no-prompt --no-chromeos-fonts || true
           echo "::endgroup::"
