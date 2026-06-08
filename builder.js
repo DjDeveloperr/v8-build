@@ -204,9 +204,16 @@ const patchIosPthreadJitWriteProtectCallSites = function () {
 
     let content = fs.readFileSync(codeMemoryAccessPath, "utf8");
     const oldCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT";
+    const previousCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !defined(__IPHONE_OS_VERSION_MIN_REQUIRED)";
     const newCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && !defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)";
     if (content.includes(newCondition)) {
         trace("iOS pthread JIT call-site patch already applied");
+        return;
+    }
+    if (content.includes(previousCondition)) {
+        content = content.replace(previousCondition, newCondition);
+        fs.writeFileSync(codeMemoryAccessPath, content);
+        trace("Updated pthread JIT write-protect call sites to exclude iOS simulator target");
         return;
     }
     if (!content.includes(oldCondition)) {
@@ -243,6 +250,27 @@ const patchIosEmbeddedBuiltinsInlineAsm = function () {
     trace("Patched embedded builtins to use inline asm for iOS V8 10");
 };
 
+const patchAndroidSimdutfAtomicBase64 = function () {
+    const typedArrayPath = path.join(v8SourcePath, "src", "builtins", "builtins-typed-array.cc");
+    if (!fs.existsSync(typedArrayPath)) {
+        trace("builtins-typed-array.cc does not exist, skip simdutf atomic base64 patch");
+        return;
+    }
+
+    let content = fs.readFileSync(typedArrayPath, "utf8");
+    let patched = content
+        .replaceAll("simdutf::atomic_base64_to_binary_safe", "simdutf::base64_to_binary_safe")
+        .replaceAll("simdutf::atomic_binary_to_base64", "simdutf::binary_to_base64");
+
+    if (patched === content) {
+        trace("simdutf atomic base64 patch not needed");
+        return;
+    }
+
+    fs.writeFileSync(typedArrayPath, patched);
+    trace("Patched V8 13 Android simdutf base64 calls to avoid SIMDUTF_ATOMIC_REF");
+};
+
 /**
  * 在ninja构建前执行，修改v8源码
  */
@@ -252,6 +280,9 @@ let onBeforeBuild = function () {
 
     switch (jobName) {
         case "android": {
+            if (v8Major === "13") {
+                patchAndroidSimdutfAtomicBase64();
+            }
             /**
              * android_ndk_root="${NDK_ROOT}"
 clang_base_path="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
