@@ -123,6 +123,9 @@ const sanitizeGNArgs = function (argsPath) {
         setGNArg("use_sysroot", "true");
         setGNArg("use_xcode_clang", "true");
         setGNArg("v8_enable_webassembly", "false");
+        if (v8Major === "10" || v8Major === "11") {
+            setGNArg("ios_deployment_target", "\"14.2\"");
+        }
         if (v8Major === "13") {
             setGNArg("v8_enable_drumbrake", "false");
         }
@@ -240,8 +243,7 @@ clang_base_path="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
             break;
         }
         case "ios": {
-            patchIosPthreadJitWriteProtect();
-            patchIosPthreadJitWriteProtectCallSites();
+            trace("Use iOS pthread JIT support without source patching");
             const gnContent = fs.readFileSync(argsPath, "utf8");
             if (gnContent.indexOf(`v8_enable_drumbrake=true`) >= 0) {
                 {
