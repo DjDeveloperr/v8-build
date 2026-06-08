@@ -123,9 +123,6 @@ const sanitizeGNArgs = function (argsPath) {
         setGNArg("use_sysroot", "true");
         setGNArg("use_xcode_clang", "true");
         setGNArg("v8_enable_webassembly", "false");
-        if (v8Major === "10" || v8Major === "11") {
-            setGNArg("ios_deployment_target", "\"14.2\"");
-        }
         if (v8Major === "13") {
             setGNArg("v8_enable_drumbrake", "false");
         }
@@ -207,7 +204,7 @@ const patchIosPthreadJitWriteProtectCallSites = function () {
 
     let content = fs.readFileSync(codeMemoryAccessPath, "utf8");
     const oldCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT";
-    const newCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !defined(V8_TARGET_OS_IOS)";
+    const newCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !defined(__IPHONE_OS_VERSION_MIN_REQUIRED)";
     if (content.includes(newCondition)) {
         trace("iOS pthread JIT call-site patch already applied");
         return;
@@ -243,7 +240,7 @@ clang_base_path="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
             break;
         }
         case "ios": {
-            trace("Use iOS pthread JIT support without source patching");
+            patchIosPthreadJitWriteProtectCallSites();
             const gnContent = fs.readFileSync(argsPath, "utf8");
             if (gnContent.indexOf(`v8_enable_drumbrake=true`) >= 0) {
                 {
