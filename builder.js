@@ -204,7 +204,7 @@ const patchIosPthreadJitWriteProtectCallSites = function () {
 
     let content = fs.readFileSync(codeMemoryAccessPath, "utf8");
     const oldCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT";
-    const newCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !defined(__IPHONE_OS_VERSION_MIN_REQUIRED)";
+    const newCondition = "#if V8_HAS_PTHREAD_JIT_WRITE_PROTECT && !defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && !defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)";
     if (content.includes(newCondition)) {
         trace("iOS pthread JIT call-site patch already applied");
         return;
@@ -217,6 +217,30 @@ const patchIosPthreadJitWriteProtectCallSites = function () {
     content = content.replace(oldCondition, newCondition);
     fs.writeFileSync(codeMemoryAccessPath, content);
     trace("Patched pthread JIT write-protect call sites to exclude iOS target");
+};
+
+const patchIosEmbeddedBuiltinsInlineAsm = function () {
+    const buildGnPath = path.join(v8SourcePath, "BUILD.gn");
+    if (!fs.existsSync(buildGnPath)) {
+        trace("BUILD.gn does not exist, skip iOS embedded builtins patch");
+        return;
+    }
+
+    let content = fs.readFileSync(buildGnPath, "utf8");
+    const oldLine = "emit_builtins_as_inline_asm = is_win && is_clang";
+    const newLine = "emit_builtins_as_inline_asm = true";
+    if (content.includes(newLine)) {
+        trace("iOS embedded builtins inline asm patch already applied");
+        return;
+    }
+    if (!content.includes(oldLine)) {
+        trace("iOS embedded builtins inline asm patch not needed");
+        return;
+    }
+
+    content = content.replace(oldLine, newLine);
+    fs.writeFileSync(buildGnPath, content);
+    trace("Patched embedded builtins to use inline asm for iOS V8 10");
 };
 
 /**
@@ -241,6 +265,9 @@ clang_base_path="${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64"
         }
         case "ios": {
             patchIosPthreadJitWriteProtectCallSites();
+            if (v8Major === "10") {
+                patchIosEmbeddedBuiltinsInlineAsm();
+            }
             const gnContent = fs.readFileSync(argsPath, "utf8");
             if (gnContent.indexOf(`v8_enable_drumbrake=true`) >= 0) {
                 {
